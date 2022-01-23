@@ -50,21 +50,30 @@ while True:
 
 
     a_stock = exchange.get_last_price_book(STOCK_A_ID)
-    a_best_bid = a_stock.bids[0].price
-    a_best_ask = a_stock.asks[0].price
-
     b_stock = exchange.get_last_price_book(STOCK_B_ID)
+    
+    if not (a_stock and a_stock.bids and a_stock.asks and b_stock and b_stock.bids and b_stock.asks):
+        print(f'Order book for {STOCK_A_ID} or {STOCK_B_ID} does not have bids or offers. Skipping iteration.')
+        continue
+    
+    a_best_bid = a_stock.bids[0].price
+    a_best_ask = a_stock.asks[0].price 
     b_best_bid = b_stock.bids[0].price
     b_best_ask = b_stock.asks[0].price
     print(a_best_bid, a_best_ask)
     print(b_best_bid, b_best_ask)
 
-    if not (a_stock and a_stock.bids and a_stock.asks and b_stock and b_stock.bids and b_stock.asks):
-        print(f'Order book for {STOCK_A_ID} or {STOCK_B_ID} does not have bids or offers. Skipping iteration.')
-        continue
+    diff1 = ((a_best_bid - b_best_ask)/((a_best_bid + b_best_ask)/2))*100
+
+    diff2 = ((b_best_bid - a_best_ask)/((b_best_bid + a_best_ask)/2))*100
+    
+    print(exchange.poll_new_trades(STOCK_A_ID))
+    print(exchange.poll_new_trades(STOCK_B_ID))
 
 
-    if a_best_bid > b_best_ask:
+    if a_best_bid > (b_best_ask*diff1):
+  
+        time.sleep(0.04)
         exchange.insert_order(
             instrument_id=STOCK_B_ID,
             price=b_best_ask,
@@ -72,7 +81,7 @@ while True:
             side="ask",
             order_type='ioc'
             )
-
+        #time.sleep(0.04)
         exchange.insert_order(
             instrument_id=STOCK_A_ID,
             price=a_best_bid,
@@ -81,21 +90,24 @@ while True:
             order_type='ioc'
             )
 
-    elif a_best_ask < b_best_bid:
+    elif (a_best_ask*diff2) < b_best_bid:
+        
+        time.sleep(0.04)
         exchange.insert_order(
             instrument_id=STOCK_A_ID,
             price=a_best_ask,
-            volume=1,
+            volume=200,
             side="ask",
             order_type='ioc'
             )
-
+        #time.sleep(0.04)
         exchange.insert_order(
             instrument_id=STOCK_B_ID,
             price=b_best_bid,
-            volume=1,
+            volume=200,
             side="bid",
             order_type='ioc'
             )
-
-    time.sleep(5)
+            
+    else:
+        time.sleep(5)
